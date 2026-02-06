@@ -2,51 +2,42 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - '*'
+    branches: ['*']
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Enable Corepack safely
-        run: |
-          corepack enable
-          corepack prepare yarn@3.5.0 --activate
+      - run: npm install -g yarn
 
-      - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: actions/setup-python@v5
         with:
-          node_version: '20.x'
+          python-version: "3.12"
 
-      - name: Install build dependencies
-        run: python -m pip install --group build
+      - name: Install Python build deps
+        run: python -m pip install --upgrade pip && python -m pip install --group build
 
-      - name: Install JS dependencies
-        run: jlpm install
+      - name: Install JS deps
+        run: yarn install --frozen-lockfile
 
-      - name: Build
-        run: jlpm build:prod
+      - name: Build frontend
+        run: yarn build:prod
 
       - name: Pack app
-        run: jlpm pack:app
+        run: yarn pack:app
 
       - name: Build wheel
-        run: jlpm build:py
+        run: yarn build:py
 
-      - name: Upload (dist)
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: jupyterlite dist ${{ github.run_number }}
           path: ./dist
@@ -54,85 +45,51 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enable Corepack safely
-        run: |
-          corepack enable
-          corepack prepare yarn@3.5.0 --activate
-
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Install Python dependencies
-        run: python -m pip install --group lint --group dev
-
-      - name: Install JS dependencies
-        run: jlpm
-
-      - name: Lint
-        run: jlpm lint:check
+      - run: npm install -g yarn
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --group lint --group dev
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint:check
 
   integrity:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enable Corepack safely
-        run: |
-          corepack enable
-          corepack prepare yarn@3.5.0 --activate
-
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Install dependencies
-        run: python -m pip install --group build
-      - name: Install dependencies
-        run: jlpm
-      - name: Check yarn.lock deduplication
-        shell: bash -el {0}
-        run: |
-          jlpm deduplicate
-          git diff --exit-code yarn.lock
-      - name: Check app resolutions
-        run: jlpm integrity:check
+      - run: npm install -g yarn
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --group build
+      - run: yarn install --frozen-lockfile
+      - run: yarn deduplicate
+      - run: git diff --exit-code yarn.lock
+      - run: yarn integrity:check
 
   typedoc:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enable Corepack safely
-        run: |
-          corepack enable
-          corepack prepare yarn@3.5.0 --activate
-
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Install Python dependencies
-        run: python -m pip install --group dev
-      - name: Install JS dependencies
-        run: jlpm
-      - name: Build lib
-        run: jlpm build:lib
-      - name: Docs (typedoc)
-        run: jlpm docs
-      - name: Upload (typedoc)
-        uses: actions/upload-artifact@v4
+      - run: npm install -g yarn
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --group dev
+      - run: yarn install --frozen-lockfile
+      - run: yarn build:lib
+      - run: yarn docs
+      - uses: actions/upload-artifact@v4
         with:
           name: jupyterlite typedoc ${{ github.run_number }}
           path: ./docs/reference/api/ts
@@ -149,30 +106,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, windows, macos]
-        python-version: ['3.10', '3.14', 'pypy-3.11']
+        python-version: ['3.10', '3.12', 'pypy-3.11']
         exclude:
           - os: windows
             python-version: pypy-3.11
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enable Corepack safely
-        run: |
-          corepack enable
-          corepack prepare yarn@3.5.0 --activate
 
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - run: npm install -g yarn
+
+      - uses: actions/setup-python@v5
         with:
-          python_version: ${{ matrix.python-version }}
-          node_version: '20.x'
+          python-version: ${{ matrix.python-version }}
 
-      - name: Download (dist)
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: jupyterlite dist ${{ github.run_number }}
           path: ./dist
@@ -181,11 +132,14 @@ jobs:
         run: |
           python -m pip install ./dist/jupyterlite*.whl
           python -m pip check
+
       - name: Prepare smoke test folder
         run: mkdir -p build/smoke-test
+
       - name: Get SOURCE_DATE_EPOCH
         id: source-date
         run: echo "epoch=$(git log -1 --format=%ct)" >> $GITHUB_OUTPUT
+
       - name: Test (CLI)
         run: |
           cd build/smoke-test
@@ -198,23 +152,28 @@ jobs:
           jupyter lite archive --source-date-epoch ${{ steps.source-date.outputs.epoch }} || exit 1
           jupyter lite list || exit 1
           jupyter lite status --debug || exit 1
+
       - name: Install test dependencies
         run: python -m pip install --group test
+
       - name: Pin pytest for pypy
         if: ${{ matrix.python-version == 'pypy-3.11' }}
         run: |
           python -m pip install "pytest<8" --prefer-binary
           echo 'See https://github.com/jupyterlite/jupyterlite/issues/1308' >> $GITHUB_STEP_SUMMARY
+
       - name: Test (py)
         run: |
           EXTRA_ARGS=""
           if [[ "${{ matrix.os }}" == "windows" ]]; then
             EXTRA_ARGS="--script-launch-mode=subprocess"
           fi
-          python -m pytest --pyargs jupyterlite_core -v $EXTRA_ARGS --cov=jupyterlite_core --cov-report=html:build/htmlcov --cov-report=term-missing --cov-fail-under=82
-      - name: Upload (reports)
+          python -m pytest --pyargs jupyterlite_core -v $EXTRA_ARGS \
+            --cov=jupyterlite_core --cov-report=html:build/htmlcov \
+            --cov-report=term-missing --cov-fail-under=82
+
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: |
             jupyterlite reports ${{ github.run_number }} ${{ matrix.os }} ${{ matrix.python-version }}
@@ -229,67 +188,71 @@ jobs:
       run:
         shell: bash -eux {0}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enable Corepack safely
-        run: |
-          corepack enable
-          corepack prepare yarn@3.5.0 --activate
 
-      - name: Download (dist)
-        uses: actions/download-artifact@v4
+      - run: npm install -g yarn
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
         with:
           name: jupyterlite dist ${{ github.run_number }}
           path: ./dist
-      - name: Download (typedoc)
-        uses: actions/download-artifact@v4
+
+      - uses: actions/download-artifact@v4
         with:
           name: jupyterlite typedoc ${{ github.run_number }}
           path: ./docs/reference/api/ts
 
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
       - name: Install (py)
         run: python -m pip install ./dist/jupyterlite*.whl
-      - name: Install Python dependencies
+
+      - name: Install Python deps
         run: |
           python -m pip install --group docs --group dev --group test -r examples/requirements-demo.txt
-      - name: Install JS dependencies
-        run: jlpm
+
+      - name: Install JS deps
+        run: yarn install --frozen-lockfile
+
       - name: Docs (app)
         run: jupyter lite build --contents examples --output-dir build/docs-app
-      - name: Upload (docs app)
-        uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v4
         with:
           name: jupyterlite docs app ${{ github.run_number }}
           path: build/docs-app
+
       - name: Docs (sphinx)
-        run: jlpm docs:build
+        run: yarn docs:build
+
       - name: Check Built Artifacts
         run: |
-          python -m pytest --check-links docs/_build/html --check-links-ignore \
-          "https://github.com/.*" --check-links-ignore "https://pypi.org/.*" \
-          --check-links-ignore "https://www.sphinx-doc.org/.*" --check-links-ignore \
-          "https://jupyterlite.readthedocs.io/.*" -q
+          python -m pytest --check-links docs/_build/html \
+            --check-links-ignore "https://github.com/.*" \
+            --check-links-ignore "https://pypi.org/.*" \
+            --check-links-ignore "https://www.sphinx-doc.org/.*" \
+            --check-links-ignore "https://jupyterlite.readthedocs.io/.*" -q
+
       - name: Test (py)
-        run: jlpm test:py:cov
-      - name: Upload (reports)
+        run: yarn test:py:cov
+
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: |
             jupyterlite reports ${{ github.run_number }} docs
           path: |
             build/htmlcov
             build/pytest
-      - name: Upload (sphinx logs)
+
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: jupyterlite sphinx logs ${{ github.run_number }}
           if-no-files-found: ignore
@@ -306,20 +269,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: jupyterlite docs app ${{ github.run_number }}
           path: public
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - uses: actions/configure-pages@v4
 
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: public
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
