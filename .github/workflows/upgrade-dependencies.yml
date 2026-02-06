@@ -40,12 +40,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || 'main' }}
 
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        with:
+          node_version: '20'
 
       - name: Install Python dependencies
         run: python -m pip install --group build
