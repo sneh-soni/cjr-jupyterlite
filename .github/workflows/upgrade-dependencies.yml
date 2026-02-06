@@ -44,16 +44,10 @@ jobs:
         with:
           ref: ${{ inputs.branch || 'main' }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Base Setup
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python-version: '3.12'
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Enable Corepack
-        run: corepack enable
+          node_version: '20'
 
       - name: Install Python dependencies
         run: python -m pip install --group build
