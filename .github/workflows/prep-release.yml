@@ -29,9 +29,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node_version: '20'
+          python-version: '3.12'
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Prep Release
         id: prep-release
