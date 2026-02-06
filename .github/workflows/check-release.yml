@@ -17,10 +17,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node_version: '20.x'
+          node-version: 20
+      - name: Enable Corepack safely
+        run: |
+          corepack enable
+          corepack prepare yarn@3.5.0 --activate
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
       - name: Check Release
         uses: jupyter-server/jupyter_releaser/.github/actions/check-release@v2
